@@ -8,7 +8,11 @@ package LRD_Behaviour {
     public import LRD_Structure::*;
 
     // =====================================================================
-    // One run: scenario in, run record out
+    // One command cycle of a run: scenario in, run record out.
+    // A full run repeats the plan, delay and drive steps every 5 min until the
+    // rover arrives or fails; status returns to the planner through the delay (IF-05).
+    // Not modelled as behaviour: command acknowledgement and the 10 s resend (REQ-C2,
+    // verified by CK-6) and the minimum 5 min between commands.
     // =====================================================================
 
     action def RunScenario {
@@ -91,6 +95,7 @@ package LRD_Behaviour {
         accept CommandReceived then driving;
         accept HoldCommanded then holding;
         accept EarthLost then waitingForEarth;
+        accept ChargeBelowReserve then failed;
         accept ScenarioTimeout then failed;
 
         state driving;
@@ -99,18 +104,22 @@ package LRD_Behaviour {
         accept ChargeBelowReserve then failed;
         accept SlopeLimitExceeded then failed;
         accept EarthLost then waitingForEarth;
+        accept ScenarioTimeout then failed;
 
         state holding {
             doc /* Planner chose to wait, for example for a moving shadow to pass. */
         }
         accept CommandReceived then driving;
+        accept EarthLost then waitingForEarth;
+        accept ChargeBelowReserve then failed;
         accept ScenarioTimeout then failed;
 
         state waitingForEarth {
-            doc /* No driving without Earth in view (REQ-R2). Entered from awaiting a command
-                 * or mid-drive; the rover stops until Earth is back in view. */
+            doc /* No driving without Earth in view (REQ-R2). Entered from awaiting a command,
+                 * holding or mid-drive; the rover stops until Earth is back in view. */
         }
         accept EarthRegained then awaitingCommand;
+        accept ChargeBelowReserve then failed;
         accept ScenarioTimeout then failed;
 
         state arrived;

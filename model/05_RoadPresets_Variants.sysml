@@ -19,36 +19,40 @@ package LRD_Variants {
         attribute tripTimeStraight1500m : DurationValue;
     }
 
+    // No-road speed made good and waypoint spacing are sourced ('='). Every other
+    // road value is an assumed placeholder ('default'), and trip times are derived
+    // from the assumed speeds.
+
     part noRoad : RoadPreset {
         attribute :>> speedMadeGoodFlat = 0.8 [cm/s];
-        attribute :>> slipMultiplier = 1.0;
-        attribute :>> rollingResistance = 0.2;
+        attribute :>> slipMultiplier default 1.0;
+        attribute :>> rollingResistance default 0.2;
         attribute :>> maxWaypointSpacing = 8 [m];
-        attribute :>> tripTimeStraight1500m = 52 [h];
+        attribute :>> tripTimeStraight1500m default 52 [h];   // derived
     }
 
     part halfBenefit : RoadPreset {
-        attribute :>> speedMadeGoodFlat = 1.2 [cm/s];
-        attribute :>> slipMultiplier = 0.75;
-        attribute :>> rollingResistance = 0.15;
-        attribute :>> maxWaypointSpacing = 8 [m];
-        attribute :>> tripTimeStraight1500m = 35 [h];
+        attribute :>> speedMadeGoodFlat default 1.2 [cm/s];
+        attribute :>> slipMultiplier default 0.75;
+        attribute :>> rollingResistance default 0.15;
+        attribute :>> maxWaypointSpacing default 8 [m];
+        attribute :>> tripTimeStraight1500m default 35 [h];   // derived
     }
 
     part expectedBenefit : RoadPreset {
-        attribute :>> speedMadeGoodFlat = 1.6 [cm/s];
-        attribute :>> slipMultiplier = 0.5;
-        attribute :>> rollingResistance = 0.1;
-        attribute :>> maxWaypointSpacing = 8 [m];
-        attribute :>> tripTimeStraight1500m = 26 [h];
+        attribute :>> speedMadeGoodFlat default 1.6 [cm/s];
+        attribute :>> slipMultiplier default 0.5;
+        attribute :>> rollingResistance default 0.1;
+        attribute :>> maxWaypointSpacing default 8 [m];
+        attribute :>> tripTimeStraight1500m default 26 [h];   // derived
     }
 
     part highBenefit : RoadPreset {
-        attribute :>> speedMadeGoodFlat = 3.2 [cm/s];
-        attribute :>> slipMultiplier = 0.25;
-        attribute :>> rollingResistance = 0.05;
-        attribute :>> maxWaypointSpacing = 16 [m];
-        attribute :>> tripTimeStraight1500m = 13 [h];
+        attribute :>> speedMadeGoodFlat default 3.2 [cm/s];
+        attribute :>> slipMultiplier default 0.25;
+        attribute :>> rollingResistance default 0.05;
+        attribute :>> maxWaypointSpacing default 16 [m];
+        attribute :>> tripTimeStraight1500m default 13 [h];   // derived
     }
 
     variation part def RoadPresetChoices :> RoadPreset {

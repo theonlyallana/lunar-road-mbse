@@ -21,13 +21,27 @@ package LRD_Hardware {
         out attribute voltage : ElectricPotentialDifferenceValue;
     }
     port def PwmPair      { doc /* 2 PWM lines per motor, plus shared enable (SLP). */ }
-    port def MotorCable   { doc /* 6-pin JST-SH: motor power out, 3V3 and ground, encoder A and B back. */ }
+    port def MotorPower   { doc /* Motor power, from a driver channel to its gearmotor. */ }
+    port def EncoderLink  { doc /* Encoder A and B back to the Pico (GP10 to GP17), powered from its 3V3.
+                                 * Shares the wheel's 6-pin JST-SH cable with motor power. */ }
+    port def BatterySense { doc /* Battery voltage through a 2:1 divider to GP26 (ADC0). */ }
     port def I2CBus       { doc /* I2C plus 3V3. */ }
     port def LedDrive     { doc /* One GPIO to a transistor; LEDs run from the battery rail. */ }
+    item def TabletopStatus {
+        doc /* The MVP's IF-05 fields, with battery voltage replacing state of charge. */
+        attribute time : DurationValue;
+        attribute x : LengthValue;
+        attribute y : LengthValue;
+        attribute heading : AngularMeasureValue;
+        attribute mode : String;
+        attribute commandStatus : String;
+        attribute batteryVoltage : ElectricPotentialDifferenceValue;
+    }
+
     port def WifiLink {
-        doc /* Wi-Fi to a laptop; reuses the MVP's IF-04 and IF-05 JSON fields. */
+        doc /* Wi-Fi to a laptop; commands reuse the MVP's IF-04 fields, status uses TabletopStatus. */
         in item command : Command;
-        out item status : RoverStatus;
+        out item status : TabletopStatus;
     }
 
     // =====================================================================
@@ -39,6 +53,7 @@ package LRD_Hardware {
         attribute nominalVoltage : ElectricPotentialDifferenceValue = 4.8 [V];
         attribute energy : EnergyValue = 12 [W*h];
         port powerOut : PowerRail;
+        port sense : BatterySense;
     }
 
     part def PicoController {
@@ -51,6 +66,11 @@ package LRD_Hardware {
         port imuBus : I2CBus;
         port ledOut : LedDrive;
         port wifi : WifiLink;
+        port batterySense : ~BatterySense;
+        port encoderFL : ~EncoderLink;
+        port encoderFR : ~EncoderLink;
+        port encoderRL : ~EncoderLink;
+        port encoderRR : ~EncoderLink;
     }
 
     part def MotorDriver {
@@ -58,16 +78,17 @@ package LRD_Hardware {
         attribute continuousCurrentPerChannel : ElectricCurrentValue = 1.2 [A];
         port powerIn : ~PowerRail;
         port pwmIn : ~PwmPair;
-        port motorA : MotorCable;
-        port motorB : MotorCable;
+        port motorA : MotorPower;
+        port motorB : MotorPower;
     }
 
     part def WheelModule {
         doc /* 1006:1 micro metal gearmotor with Hall encoder and a printed grousered wheel. */
         attribute wheelDiameter : LengthValue = 50 [mm];
         attribute wheelWidth : LengthValue = 20 [mm];
-        attribute stallTorqueDerated : TorqueValue = 0.23 [N*m];   // 2.3 kg.cm at 4.8 V
-        port cable : ~MotorCable;
+        attribute stallTorqueDerated : TorqueValue = 0.23 [N*m];   // derived from 2.3 kg.cm at 4.8 V
+        port motorIn : ~MotorPower;
+        port encoder : EncoderLink;
     }
 
     part def Imu {
@@ -89,12 +110,15 @@ package LRD_Hardware {
         doc /* 1:10 four-wheel skid-steer model, about 0.6 kg, top speed near 3 cm/s. */
 
         // Measured or calculated properties checked by the CK-H checks
-        attribute footprint : LengthValue = 170 [mm];
+        attribute footprint : LengthValue = 170 [mm];   // design value
         attribute mass : MassValue default 0.6 [kg];
         attribute topSpeed : SpeedValue = 3.0 [cm/s];
         attribute scaleSpeed : SpeedValue = 2 [cm/s];
-        attribute drivingPower : PowerValue = 1.48 [W];
+        attribute drivingPower : PowerValue default 1.48 [W];   // derived from assumed Pico and LED/IMU loads
         attribute partsCostGBP : Real default 173.70;
+        attribute measuredFootprint : LengthValue;
+        attribute measuredWheelDiameter : LengthValue;
+        attribute measuredWheelWidth : LengthValue;
         attribute measuredLevelSpeed : SpeedValue;
         attribute continuousRunTime : DurationValue;
         attribute commsLossStopTime : DurationValue;
@@ -121,20 +145,27 @@ package LRD_Hardware {
         port wifi : WifiLink;
         bind wifi = controller.wifi;
 
-        // E1: battery to both drivers directly, and to the Pico's VSYS through a silicon diode
+        // E1: battery to both drivers directly, to the Pico's VSYS through a silicon diode,
+        // and to the battery sense pin through a 2:1 divider
         connection 'E1 battery to driver 1' connect battery.powerOut to driver1.powerIn;
         connection 'E1 battery to driver 2' connect battery.powerOut to driver2.powerIn;
         connection 'E1 battery to Pico VSYS' connect battery.powerOut to controller.powerIn;
+        connection 'E1 battery sense' connect battery.sense to controller.batterySense;
 
         // E2: Pico to drivers, 8 PWM lines and 1 shared enable
         connection 'E2 Pico to driver 1' connect controller.pwmDriver1 to driver1.pwmIn;
         connection 'E2 Pico to driver 2' connect controller.pwmDriver2 to driver2.pwmIn;
 
-        // E3: control board to each wheel over a 6-pin JST-SH cable
-        connection 'E3 front left'  connect driver1.motorA to frontLeft.cable;
-        connection 'E3 front right' connect driver1.motorB to frontRight.cable;
-        connection 'E3 rear left'   connect driver2.motorA to rearLeft.cable;
-        connection 'E3 rear right'  connect driver2.motorB to rearRight.cable;
+        // E3: control board to each wheel over one 6-pin JST-SH cable, carrying motor
+        // power from a driver and encoder signals back to the Pico
+        connection 'E3 front left power'  connect driver1.motorA to frontLeft.motorIn;
+        connection 'E3 front right power' connect driver1.motorB to frontRight.motorIn;
+        connection 'E3 rear left power'   connect driver2.motorA to rearLeft.motorIn;
+        connection 'E3 rear right power'  connect driver2.motorB to rearRight.motorIn;
+        connection 'E3 front left encoder'  connect frontLeft.encoder to controller.encoderFL;
+        connection 'E3 front right encoder' connect frontRight.encoder to controller.encoderFR;
+        connection 'E3 rear left encoder'   connect rearLeft.encoder to controller.encoderRL;
+        connection 'E3 rear right encoder'  connect rearRight.encoder to controller.encoderRR;
 
         // E4 and E5
         connection 'E4 Pico to IMU'  connect controller.imuBus to imu.bus;
@@ -142,7 +173,8 @@ package LRD_Hardware {
     }
 
     part def RoutePlayerLaptop {
-        doc /* Reads a stored route (IF-06 format) and sends waypoints; can add a 6 to 10 s delay. */
+        doc /* Reads a stored route (IF-06 format) and sends waypoints; can hold each message for
+             * half of a sampled 6 to 10 s round trip. */
         port wifi : ~WifiLink;
     }
 
@@ -164,10 +196,10 @@ package LRD_Hardware {
 
     package ViperReference {
         part def SolarArray       { attribute powerPerPanel : PowerValue = 320 [W]; }
-        part def ViperBattery     { attribute capacityStartOfLife : EnergyValue = 5420 [W*h]; }
+        part def ViperBattery     { doc /* One of two internal units; core components shared with Orion. */ }
         part def IntegratedAvionicsUnit { doc /* Command and data handling with electric power functions (Moog). */ }
         part def SEPIA            { doc /* With the IAU, manages solar array, battery charging and power distribution. */ }
-        part def MotorControlBox  { doc /* Controls 6 BLDC actuators; 20 A peak per axis for 10 s. */ }
+        part def MotorControlBox  { doc /* Controls 6 BLDC actuators; 20 A peak per axis for 10 s; in the warm box. */ }
         part def ViperWheelModule { doc /* Drive, steering and suspension actuators. */ }
         part def ViperImu;
         part def StarTracker      { doc /* Rocket Lab ST16RT2; 28 V dual RS-485. */ }
@@ -176,11 +208,12 @@ package LRD_Hardware {
         part def XBandLink        { doc /* X-band direct to Earth, gimballed high-gain and fixed low-gain antennas. */ }
 
         part def ViperRover {
+            attribute batteryCapacityStartOfLife : EnergyValue = 5420 [W*h];   // total of both units, 0 C
             part solarArrays : SolarArray[3];
             part batteries : ViperBattery[2];
             part iau : IntegratedAvionicsUnit;
             part sepia : SEPIA;
-            part motorControlBoxes : MotorControlBox[2];
+            part motorControlBoxes : MotorControlBox[1..*];   // count not published; two is an inference
             part wheelModules : ViperWheelModule[4];
             part imu : ViperImu;
             part starTracker : StarTracker;
@@ -203,14 +236,24 @@ package LRD_Hardware {
         end modelElement : Parts::Part;
     }
 
+    // Mapping follows the hardware spec's VIPER-to-tabletop table.
     allocation batteryMap : StandsInFor allocate viperReference.batteries to tabletopRoverDesign.battery;
     allocation avionicsMap : StandsInFor allocate viperReference.iau to tabletopRoverDesign.controller;
     allocation powerMgmtMap : StandsInFor allocate viperReference.sepia to tabletopRoverDesign.controller;
+    allocation powerSwitchMap : StandsInFor allocate viperReference.sepia to tabletopRoverDesign.battery;
+    // The motor control boxes, whatever their number, stand in as a set for both drivers.
     allocation motorCtrlMap1 : StandsInFor allocate viperReference.motorControlBoxes to tabletopRoverDesign.driver1;
     allocation motorCtrlMap2 : StandsInFor allocate viperReference.motorControlBoxes to tabletopRoverDesign.driver2;
+    // VIPER's four wheel modules stand in as a set for the four tabletop wheels.
+    allocation wheelMapFL : StandsInFor allocate viperReference.wheelModules to tabletopRoverDesign.frontLeft;
+    allocation wheelMapFR : StandsInFor allocate viperReference.wheelModules to tabletopRoverDesign.frontRight;
+    allocation wheelMapRL : StandsInFor allocate viperReference.wheelModules to tabletopRoverDesign.rearLeft;
+    allocation wheelMapRR : StandsInFor allocate viperReference.wheelModules to tabletopRoverDesign.rearRight;
     allocation imuMap : StandsInFor allocate viperReference.imu to tabletopRoverDesign.imu;
     allocation starTrackerMap : StandsInFor allocate viperReference.starTracker to tabletopRoverDesign.imu;
+    allocation camerasMap : StandsInFor allocate viperReference.cameras to tabletopRoverDesign.mast;
     allocation lightsMap : StandsInFor allocate viperReference.lights to tabletopRoverDesign.leds;
+    allocation radioMap : StandsInFor allocate viperReference.radio to tabletopRoverDesign.controller;
     allocation panelsMap : StandsInFor allocate viperReference.solarArrays to tabletopRoverDesign.panels;
 
     use case def 'Replay Route On Tabletop' {

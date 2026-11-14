@@ -18,7 +18,7 @@ Rendered from the model by the Pilot Implementation.
 |---|---|
 | ![Rover electrical design](diagrams/roverElectrical.svg) | ![Simulation run](diagrams/runFlow.svg) |
 
-More in [`diagrams/`](diagrams): system context, part tree, requirement trees and road preset variants.
+More in [`diagrams/`](diagrams): system context, part tree, requirement diagrams and road preset variants.
 
 ## What's in the model
 
@@ -26,26 +26,26 @@ More in [`diagrams/`](diagrams): system context, part tree, requirement trees an
 |---|---|
 | `01_Structure.sysml` | Logical architecture: environment, planner, command delay link, rover (mobility and power), display, scenario config. Items, ports and interface definitions IF-01 to IF-07, all connected. |
 | `02_Context_UseCases.sysml` | Actors (viewer, lunar terrain, ephemeris) and use cases. |
-| `03_Requirements_Sim.sysml` | 17 simulation requirements (REQ-MVP, M, P, E, C, R) with IDs. Numeric ones are written as checkable constraints. |
+| `03_Requirements_Sim.sysml` | 24 simulation requirements: REQ-M, P, E, C and R keep the spec's IDs; the spec's other "shall" statements are REQ-MVP1 to MVP10, IDs assigned in this model. Numeric ones are written as checkable constraints. |
 | `04_Behaviour.sysml` | Functional flow of one run, a road versus no-road comparison, and the rover operating mode state machine (awaiting command, driving, holding, waiting for Earth, arrived, failed). |
 | `05_RoadPresets_Variants.sysml` | Variability: four road presets and three awake-load presets, with two example configurations from the 24-run stored set. |
-| `06_Hardware_1to10.sysml` | Physical architecture of the 1:10 rover (Pico 2 W, DRV8833 drivers, four encoded gearmotors, IMU, LEDs, NiMH battery), connections E1 to E6, VIPER reference blocks, and allocations showing which tabletop element stands in for which VIPER block. |
-| `07_Requirements_Hardware.sysml` | 10 build requirements (REQ-H1 to H10). |
-| `08_Verification_Traceability.sysml` | 14 verification cases with methods (test, analyse, inspect, demo), satisfy relations, and allocation of run steps to logical elements. |
+| `06_Hardware_1to10.sysml` | Physical architecture of the 1:10 rover (Pico 2 W, DRV8833 drivers, four encoded gearmotors, IMU, LEDs, NiMH battery), connections E1 to E6 including encoder feedback and battery sensing, VIPER reference blocks, and allocations matching the spec's VIPER-to-tabletop table. |
+| `07_Requirements_Hardware.sysml` | 10 build requirements (REQ-H1 to H10), plus the spec's scale-model caveat as REQ-H11. |
+| `08_Verification_Traceability.sysml` | 16 verification cases with methods (test, analyse, inspect, demo), satisfy relations, and allocation of run steps to logical elements. |
 | `traceability.csv` | Requirement to verification matrix, generated from the model. |
-| `diagrams/` | Nine diagrams rendered from the model (SVG). |
+| `diagrams/` | Twelve diagrams rendered from the model (SVG). |
 | `notebooks/LunarRoadDemo.ipynb` | Loads every file in order and renders the diagrams. |
 
 ## Key modelling decisions
 
-- **Sourced versus assumed values.** Sourced values (447 kg mass, 15° slope limit, 5,420 Wh battery, 6 to 10 s round trip) are bound with `=`. Assumed values (250 W awake load, 20% reserve, slip, packet drops) use `default`, so they stay configurable, as the spec requires.
+- **Sourced versus assumed values.** Sourced values (447 kg mass, 15° slope limit, 5,420 Wh battery, 6 to 10 s round trip) are bound with `=`. Assumed values (250 W awake load, 20% reserve, every road preset value, packet drops) use `default`, so they stay configurable, as the spec requires (REQ-MVP4). Derived values are marked as derived.
 - **The road changes only road flags.** Both runs share one rover, planner and environment. The road presets are variants, not structural changes (REQ-E3).
-- **The physical rover reuses the simulation interfaces.** Its Wi-Fi link carries the IF-04 and IF-05 message fields, so the hardware places no new requirement on the simulation.
+- **The physical rover reuses the simulation interfaces.** Its Wi-Fi link carries the IF-04 and IF-05 message fields, with battery voltage in place of state of charge, so the hardware places no new requirement on the simulation.
 - **Allocation, not copying.** VIPER blocks are allocated to tabletop stand-ins (for example IAU and SEPIA to the Pico 2 W). That makes the gap between the model and VIPER explicit.
 
 ## Verification coverage
 
-All 27 requirements are verified by at least one case. The original spec's checks (CK-1 to CK-5, CK-H1 to CK-H8) covered all but five simulation requirements: REQ-M1, C1, R1, R3 and R4. I added a proposed **CK-6 planner and delay unit tests** to close that gap. The mapping of REQ-M3 to CK-3 and REQ-C2 to CK-2 is my judgement.
+All 35 requirements are verified by at least one case. The hardware checks CK-H1 to CK-H8 follow the spec's own "Covers" column. The simulation spec's checks CK-1 to CK-5 do not say which requirements they cover, so every simulation mapping is this model's judgement, and each check verifies only what its pass condition actually tests. Three checks are **proposed additions**, marked PROPOSED in their names: **CK-6** (planner, power and delay unit tests), **CK-7** (results and delivery review) and **CK-H9** (scale-model caveat).
 
 None of the hardware checks has been run yet, because the rover is not built.
 

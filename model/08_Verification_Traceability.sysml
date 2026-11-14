@@ -1,6 +1,7 @@
 package LRD_Verification {
     doc /*
-     * Verification cases (CK-1 to CK-5 for the simulation, CK-H1 to CK-H8 for the rover),
+     * Verification cases (CK-1 to CK-5 for the simulation and CK-H1 to CK-H8 for the rover,
+     * from the specs, plus the proposed CK-6, CK-7 and CK-H9),
      * satisfy relations, and allocation of functions to logical elements.
      * None of the hardware checks has been run yet, because nothing is built.
      */
@@ -39,7 +40,9 @@ package LRD_Verification {
     allocate runScenario.logResults to mvpDesign.display;
 
     // =====================================================================
-    // Simulation checks (MVP spec, "MVP checks")
+    // Simulation checks (MVP spec, "MVP checks"). The spec does not say which
+    // requirements each check covers, so these mappings are this model's judgement:
+    // each check verifies only what its pass condition actually tests.
     // =====================================================================
 
     verification def 'CK-1 FairAndRepeatable' {
@@ -48,12 +51,14 @@ package LRD_Verification {
         subject sim : LunarRoadDemoSystem;
         objective {
             verify roadOnlyChangesFlags;
-            verify comparison;
+            verify fixedScenario;
         }
     }
 
     verification def 'CK-2 LimitsRespected' {
-        doc /* Pass: no route enters a cell above 15 degrees or drives without Earth in view. */
+        doc /* Pass: no route enters a cell above 15 degrees or drives without Earth in view.
+             * Covers the slope and Earth parts of REQ-R2 and REQ-C2 only; the reserve limit,
+             * resends and logging are covered by CK-6. */
         @VerificationMethod { kind = (test, analyze); }
         subject sim : LunarRoadDemoSystem;
         objective {
@@ -66,12 +71,11 @@ package LRD_Verification {
     verification def 'CK-3 PowerModelCorrect' {
         doc /* Pass: Sun on a rear corner gives about 450 W, and a 600 W test load drains a full
              * battery in about 9 h. The second check tests code only. */
-        @VerificationMethod { kind = analyze; }
+        @VerificationMethod { kind = (analyze, test); }
         subject sim : LunarRoadDemoSystem;
         objective {
             verify loadModel;
             verify chargeBounds;
-            verify headingForSun;
         }
     }
 
@@ -82,7 +86,7 @@ package LRD_Verification {
         subject sim : LunarRoadDemoSystem;
         objective {
             verify visibilityFromTerrain;
-            verify visibilityHeights;
+            verify widerTerrainForShadows;
         }
     }
 
@@ -92,25 +96,49 @@ package LRD_Verification {
         @VerificationMethod { kind = demo; }
         subject sim : LunarRoadDemoSystem;
         objective {
-            verify reportEitherWay;
-            verify caveat;
+            verify precomputedRunSet;
         }
     }
 
-    // Requirements not yet covered by a CK check: REQ-M1, REQ-C1, REQ-R1, REQ-R3, REQ-R4.
-    // Proposed extra check, not in the original spec:
-    verification def 'CK-6 PlannerAndDelayUnitTests' {
-        doc /* Proposed: unit tests that the planner uses the active preset on road cells,
-             * samples delay from 6 to 10 s, applies the energy penalty and finishes each plan
-             * within 5 min. */
+    // Checks CK-6 and CK-7 are proposed by this model, not in the original spec.
+    // They cover the requirements that CK-1 to CK-5 do not test.
+
+    verification def 'CK-6 PROPOSED PlannerPowerAndDelayTests' {
+        doc /* Proposed: unit tests that the planner uses the active preset on road cells, picks
+             * the sunniest allowed heading, respects the battery reserve, applies the energy
+             * penalty and finishes each plan within 5 min; that delay is sampled from 6 to 10 s;
+             * that unacknowledged commands are resent after 10 s and drops are logged; and that
+             * visibility uses the 2 m and 1 m heights. */
         @VerificationMethod { kind = test; }
         subject sim : LunarRoadDemoSystem;
         objective {
             verify roadSpeedAndSlip;
-            verify delaySampling;
+            verify headingForSun;
+            verify hardLimits;
             verify timeAndEnergy;
             verify arrivalObjective;
             verify planTime;
+            verify delaySampling;
+            verify commandHandshake;
+            verify visibilityHeights;
+        }
+    }
+
+    verification def 'CK-7 PROPOSED ResultsAndDeliveryReview' {
+        doc /* Proposed: review that results report time, energy, risk and reliability either way,
+             * carry the caveat, describe R2 as selected, use Connecting Ridge with the selection
+             * rules, that the run set works without the final display, and that the scenario
+             * configuration exposes every assumed value. */
+        @VerificationMethod { kind = inspect; }
+        subject sim : LunarRoadDemoSystem;
+        objective {
+            verify comparison;
+            verify reportEitherWay;
+            verify caveat;
+            verify r2Framing;
+            verify siteAndPatchSelection;
+            verify displayIndependence;
+            verify assumedValuesConfigurable;
         }
     }
 
@@ -174,5 +202,12 @@ package LRD_Verification {
         @VerificationMethod { kind = inspect; }
         subject rover : TabletopRover;
         objective { verify massLimit; }
+    }
+
+    verification def 'CK-H9 PROPOSED CaveatCheck' {
+        doc /* Proposed: check that anything shown with the rover carries the scale-model caveat. */
+        @VerificationMethod { kind = inspect; }
+        subject rover : TabletopRover;
+        objective { verify scaleModelCaveat; }
     }
 }

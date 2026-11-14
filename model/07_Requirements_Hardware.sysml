@@ -1,6 +1,7 @@
 package LRD_Requirements_Hardware {
     doc /*
-     * The ten requirements that define a finished 1:10 rover build (REQ-H1 to REQ-H10).
+     * The ten requirements that define a finished 1:10 rover build (REQ-H1 to REQ-H10),
+     * plus the spec's required caveat, given the ID REQ-H11 here.
      */
 
     private import ScalarValues::*;
@@ -15,7 +16,9 @@ package LRD_Requirements_Hardware {
     requirement <'REQ-H1'> footprintAndWheels : HardwareRequirement {
         doc /* The rover shall fit a 170 mm x 170 mm footprint with 50 mm x 20 mm wheels, within 2 mm. */
         require constraint {
-            rover.footprint >= 168 [mm] and rover.footprint <= 172 [mm]
+            rover.measuredFootprint >= 168 [mm] and rover.measuredFootprint <= 172 [mm] and
+            rover.measuredWheelDiameter >= 48 [mm] and rover.measuredWheelDiameter <= 52 [mm] and
+            rover.measuredWheelWidth >= 18 [mm] and rover.measuredWheelWidth <= 22 [mm]
         }
     }
 
@@ -25,7 +28,8 @@ package LRD_Requirements_Hardware {
     }
 
     requirement <'REQ-H3'> printable : HardwareRequirement {
-        doc /* All structural parts shall print in PLA on a 180 mm x 180 mm bed without supports. */
+        doc /* All structural parts shall print in PLA on a 180 mm x 180 mm bed without supports,
+             * except where the CAD section says otherwise. */
     }
 
     requirement <'REQ-H4'> levelSpeed : HardwareRequirement {
@@ -65,6 +69,12 @@ package LRD_Requirements_Hardware {
         require constraint { rover.mass < 0.8 [kg] }
     }
 
+    requirement <'REQ-H11'> scaleModelCaveat : HardwareRequirement {
+        doc /* Anything shown with this rover shall state that it is a scale model driving a
+             * replayed route, and that its speed, slip and energy use say nothing about VIPER
+             * or a lunar road. */
+    }
+
     requirement hardwareSpecification : HardwareRequirement {
         doc /* All 1:10 rover build requirements. */
         require footprintAndWheels;
@@ -77,5 +87,6 @@ package LRD_Requirements_Hardware {
         require safeStop;
         require cost;
         require massLimit;
+        require scaleModelCaveat;
     }
 }

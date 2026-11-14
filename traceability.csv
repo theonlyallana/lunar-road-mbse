@@ -1,28 +1,36 @@
 Requirement ID,Name,Requirement,Verified by,Method
-REQ-C1,delaySampling,"Round-trip delay shall be sampled from 6 to 10 s. Rover state and status messages shall update every 60 s, with message delays handled as timed events.",CK-6 PlannerAndDelayUnitTests,test
-REQ-C2,commandHandshake,"The rover shall not start a new waypoint without a command, or while Earth is out of view. A command with no acknowledgement within 10 s shall be resent, and a dropped status message is replaced by the next one. Drops and resends shall be logged.",CK-2 LimitsRespected,"test, analyze"
+REQ-C1,delaySampling,"Round-trip delay shall be sampled from 6 to 10 s. Rover state and status messages shall update every 60 s (assumed), with message delays handled as timed events.",CK-6 PROPOSED PlannerPowerAndDelayTests,test
+REQ-C2,commandHandshake,"The rover shall not start a new waypoint without a command, or while Earth is out of view. A command with no acknowledgement within 10 s shall be resent, and a dropped status message is replaced by the next one. Drops and resends shall be logged.",CK-2 LimitsRespected; CK-6 PROPOSED PlannerPowerAndDelayTests,"test, analyze; test"
 REQ-E1,visibilityFromTerrain,"Sun and Earth visibility shall be calculated from terrain, not hand-painted.",CK-4 ShadowsBelievable,analyze
-REQ-E2,visibilityHeights,Earth visibility shall use 2 m height and sunlight 1 m height (both assumed).,CK-4 ShadowsBelievable,analyze
+REQ-E2,visibilityHeights,Earth visibility shall use 2 m height and sunlight 1 m height (both assumed).,CK-6 PROPOSED PlannerPowerAndDelayTests,test
 REQ-E3,roadOnlyChangesFlags,Turning the road off shall change only the road flags.,CK-1 FairAndRepeatable,test
 REQ-H1,footprintAndWheels,"The rover shall fit a 170 mm x 170 mm footprint with 50 mm x 20 mm wheels, within 2 mm.",CK-H1 MeasureFinishedRover,inspect
 REQ-H10,massLimit,"Mass shall stay under 0.8 kg, so the torque margins in the spec hold.",CK-H8 WeighRover,inspect
+REQ-H11,scaleModelCaveat,"Anything shown with this rover shall state that it is a scale model driving a replayed route, and that its speed, slip and energy use say nothing about VIPER or a lunar road.",CK-H9 PROPOSED CaveatCheck,inspect
 REQ-H2,viperFeatures,"The rover shall carry VIPER's recognisable features: a box body, a wheel at each corner, panels on the rear, left and right, and a front mast.",CK-H1 MeasureFinishedRover,inspect
-REQ-H3,printable,All structural parts shall print in PLA on a 180 mm x 180 mm bed without supports.,CK-H2 PrintEveryPart,inspect
+REQ-H3,printable,"All structural parts shall print in PLA on a 180 mm x 180 mm bed without supports, except where the CAD section says otherwise.",CK-H2 PrintEveryPart,inspect
 REQ-H4,levelSpeed,"The rover shall hold a commanded speed of 2 cm/s on level ground, within 10%.",CK-H3 LevelSpeedRun,test
 REQ-H5,slopeAndTurn,The rover shall climb a 15 degree slope and turn on the spot on the chosen demo surface.,CK-H4 RampAndTurn,test
 REQ-H6,endurance,The rover shall run for at least 2 hours of continuous driving on one set of cells.,CK-H5 EnduranceRun,test
 REQ-H7,wifiCommanding,"The rover shall accept waypoint commands over Wi-Fi and report position, heading and battery voltage.",CK-H6 WaypointsAndCommsLoss,test
 REQ-H8,safeStop,The rover shall stop within 1 s if commands stop arriving.,CK-H6 WaypointsAndCommsLoss,test
 REQ-H9,cost,"Total parts cost shall stay under GBP 300, including filament and delivery.",CK-H7 TotalReceipts,inspect
-REQ-M1,roadSpeedAndSlip,"Speed made good and slip shall use the no-road values off-road, and the active preset on road cells.",CK-6 PlannerAndDelayUnitTests,test
+REQ-M1,roadSpeedAndSlip,"Speed made good and slip shall use the no-road values off-road, and the active preset on road cells.",CK-6 PROPOSED PlannerPowerAndDelayTests,test
 REQ-M2,slopeLimit,The planner shall reject cells above the 15 degree slope limit.,CK-2 LimitsRespected,"test, analyze"
-REQ-M3,headingForSun,Body heading may differ from travel direction by up to 50 degrees while driving. In sunlight the rover shall choose the allowed heading with the most solar input; in shadow it shall face its direction of travel.,CK-3 PowerModelCorrect,analyze
-REQ-MVP1,comparison,"The MVP shall compare the same VIPER-class rover trip with and without a road, on real lunar south polar terrain, and report the difference in time, energy, risk and reliability.",CK-1 FairAndRepeatable,test
-REQ-MVP2,reportEitherWay,"Results shall be reported whichever way they turn out, including if the road makes little difference.",CK-5 DemoWorksEndToEnd,demo
-REQ-MVP3,caveat,"Every shared result shall state that it comes from a simplified model using assumed rover loads, slip and road performance.",CK-5 DemoWorksEndToEnd,demo
-REQ-P1,loadModel,"Load shall be the awake load, plus driving power multiplied by the moving fraction.",CK-3 PowerModelCorrect,analyze
-REQ-P2,chargeBounds,"Charge shall stay between 0% and 100%, with excess solar power discarded.",CK-3 PowerModelCorrect,analyze
-REQ-R1,timeAndEnergy,"The planner shall work out time and energy from the active speed, slip and load.",CK-6 PlannerAndDelayUnitTests,test
-REQ-R2,hardLimits,"Hard limits shall be slope, battery reserve, and no driving without Earth in view.",CK-2 LimitsRespected,"test, analyze"
-REQ-R3,arrivalObjective,"The planner shall minimise arrival time, with an energy penalty of 0.001 h per Wh drawn from the battery (assumed and configurable).",CK-6 PlannerAndDelayUnitTests,test
-REQ-R4,planTime,"The planner may use a coarser grid, but each plan shall finish within 5 min and the final route shall be rechecked at full resolution.",CK-6 PlannerAndDelayUnitTests,test
+REQ-M3,headingForSun,Body heading may differ from travel direction by up to plus or minus 50 degrees (assumed) while driving. In sunlight the rover shall choose the allowed heading with the most solar input; in shadow it shall face its direction of travel.,CK-6 PROPOSED PlannerPowerAndDelayTests,test
+REQ-MVP1,comparison,"The MVP shall compare the same VIPER-class rover trip with and without a road, on real lunar south polar terrain, and report the difference in time, energy, risk and reliability.",CK-7 PROPOSED ResultsAndDeliveryReview,inspect
+REQ-MVP10,displayIndependence,The simulation core and stored run set shall stay independent of the final display.,CK-7 PROPOSED ResultsAndDeliveryReview,inspect
+REQ-MVP2,reportEitherWay,"Results shall be reported whichever way they turn out, including if the road makes little difference.",CK-7 PROPOSED ResultsAndDeliveryReview,inspect
+REQ-MVP3,caveat,"Every shared result shall state that it comes from a simplified model using assumed rover loads, slip and road performance. VIPER is driven by a human team, while this demo plans automatically.",CK-7 PROPOSED ResultsAndDeliveryReview,inspect
+REQ-MVP4,assumedValuesConfigurable,Every assumed value shall be configurable.,CK-7 PROPOSED ResultsAndDeliveryReview,inspect
+REQ-MVP5,fixedScenario,"Each comparison shall use one fixed start, goal, start time and terrain map.",CK-1 FairAndRepeatable,test
+REQ-MVP6,widerTerrainForShadows,"The shadow calculation shall use a wider, lower-resolution terrain map around the 2 km patch, because distant ridges cast shadows into the area.",CK-4 ShadowsBelievable,analyze
+REQ-MVP7,siteAndPatchSelection,"The demo shall use Connecting Ridge. The 2 km patch and scenario date shall be chosen from the data using the spec's selection rules, in order.",CK-7 PROPOSED ResultsAndDeliveryReview,inspect
+REQ-MVP8,r2Framing,"Scenario R2 shall be described as selected to illustrate the problem, not as a typical trip.",CK-7 PROPOSED ResultsAndDeliveryReview,inspect
+REQ-MVP9,precomputedRunSet,"Every control combination shall be precomputed and stored, so the viewer changes results without replanning: 3 no-road and 9 road runs per scenario, 24 in total.",CK-5 DemoWorksEndToEnd,demo
+REQ-P1,loadModel,"Load shall be the awake load, plus driving power multiplied by the moving fraction.",CK-3 PowerModelCorrect,"analyze, test"
+REQ-P2,chargeBounds,"Charge shall stay between 0% and 100%, with excess solar power discarded.",CK-3 PowerModelCorrect,"analyze, test"
+REQ-R1,timeAndEnergy,"The planner shall work out time and energy from the active speed, slip and load.",CK-6 PROPOSED PlannerPowerAndDelayTests,test
+REQ-R2,hardLimits,"Hard limits shall be slope, battery reserve, and no driving without Earth in view.",CK-2 LimitsRespected; CK-6 PROPOSED PlannerPowerAndDelayTests,"test, analyze; test"
+REQ-R3,arrivalObjective,"The planner shall minimise arrival time, with an energy penalty of 0.001 h per Wh drawn from the battery (assumed and configurable).",CK-6 PROPOSED PlannerPowerAndDelayTests,test
+REQ-R4,planTime,"The planner may use a coarser grid, but each plan shall finish within 5 min (assumed) and the final route shall be rechecked at full resolution.",CK-6 PROPOSED PlannerPowerAndDelayTests,test

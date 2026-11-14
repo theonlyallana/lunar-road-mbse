@@ -33,13 +33,17 @@ package LRD_Structure {
     // =====================================================================
 
     item def TerrainData {
-        doc /* IF-01: height (m), slope and wider horizon terrain. GeoTIFF on the LOLA polar stereographic grid. */
-        attribute cellSize : LengthValue = 5 [m];
+        doc /* IF-01: height (m), slope and wider horizon terrain. GeoTIFF on the LOLA polar stereographic grid.
+             * The 5 m cell size applies to the 2 km patch; the wider horizon terrain is lower resolution. */
+        attribute patchCellSize : LengthValue = 5 [m];
     }
 
     item def EphemerisData {
         doc /* IF-02: time, Sun and Earth azimuth and elevation (degrees). */
+        attribute time : DurationValue;
+        attribute sunAzimuth : AngularMeasureValue;
         attribute sunElevation : AngularMeasureValue;
+        attribute earthAzimuth : AngularMeasureValue;
         attribute earthElevation : AngularMeasureValue;
     }
 
@@ -73,12 +77,24 @@ package LRD_Structure {
 
     item def RunRecord {
         doc /* IF-06: time-stamped route, state, solar power, load, events and results. Parquet or CSV. */
+        attribute time : DurationValue;
+        attribute x : LengthValue;
+        attribute y : LengthValue;
+        attribute stateOfCharge : Real;
+        attribute solarPower : PowerValue;
+        attribute load : PowerValue;
+        attribute eventText : String;
     }
 
     item def ScenarioSettings {
         doc /* IF-07: road on or off, preset, start, goal, start time, seed and parameters. Versioned YAML. */
         attribute roadOn : Boolean;
         attribute preset : String;
+        attribute startX : LengthValue;
+        attribute startY : LengthValue;
+        attribute goalX : LengthValue;
+        attribute goalY : LengthValue;
+        attribute startTime : String;
         attribute seed : Integer;
     }
 
@@ -131,13 +147,14 @@ package LRD_Structure {
         attribute slopeLimit : AngularMeasureValue = 15 ['°'];
         attribute maxHeadingOffset : AngularMeasureValue default 50 ['°'];
         attribute offRoadRollingResistance : Real default 0.2;
+        attribute movingFraction : Real;   // constant for each preset (REQ-P1)
         attribute currentSlope : AngularMeasureValue;
-        attribute slip : Real;
+        attribute slip : Real;            // off-road: 2% at 0, 5% at 5, 10% at 10, 20% at 15 degrees (assumed)
     }
 
     part def PowerModel {
         doc /* Model 2: battery state updated each step as solar input minus load. */
-        attribute batteryCapacity : EnergyValue = 5420 [W*h];
+        attribute batteryCapacity : EnergyValue = 5420 [W*h];   // at start of life, 0 C
         attribute solarPerPanel : PowerValue = 320 [W];
         attribute solarAtCorner : PowerValue = 450 [W];
         attribute batteryReserveFraction : Real default 0.2;
@@ -156,6 +173,7 @@ package LRD_Structure {
         port commandIn : ~CommandPort;
         port statusOut : StatusPort;
         port recordOut : RunRecordPort;
+        port settingsIn : ~ScenarioPort;
     }
 
     part def CommandDelayLink {
@@ -170,12 +188,14 @@ package LRD_Structure {
         port commandOut : CommandPort;
         port statusIn : ~StatusPort;
         port statusOut : StatusPort;
+        port settingsIn : ~ScenarioPort;
     }
 
     part def Planner {
         doc /* Model 5: the same time-aware planner runs in both cases, so any difference comes from the road. */
         attribute commandCycle : DurationValue = 5 [min];
-        attribute maxWaypointSpacing : LengthValue default 8 [m];
+        attribute minWaypointSpacing : LengthValue = 4 [m];   // off-road, sourced
+        attribute maxWaypointSpacing : LengthValue = 8 [m];   // off-road, sourced; road limit set by preset
         attribute energyPenalty : Real default 0.001;   // hours per Wh drawn
         attribute maxPlanTime : DurationValue default 5 [min];
         attribute maxPlannedSlope : AngularMeasureValue;
@@ -191,6 +211,7 @@ package LRD_Structure {
         attribute storedRuns : Integer = 24;
         port plannerRecordIn : ~RunRecordPort;
         port roverRecordIn : ~RunRecordPort;
+        port settingsIn : ~ScenarioPort;
     }
 
     part def ScenarioConfig {
@@ -246,11 +267,17 @@ package LRD_Structure {
         interface roverToLog : 'IF-06 RunRecordInterface' connect
             source ::> rover.recordOut to sink ::> display.roverRecordIn;
 
-        // IF-07: scenario settings to all blocks that read them
+        // IF-07: scenario settings to all blocks
         interface settingsToEnv : 'IF-07 ScenarioInterface' connect
             source ::> scenario.settingsOut to sink ::> environment.settingsIn;
         interface settingsToPlanner : 'IF-07 ScenarioInterface' connect
             source ::> scenario.settingsOut to sink ::> planner.settingsIn;
+        interface settingsToRover : 'IF-07 ScenarioInterface' connect
+            source ::> scenario.settingsOut to sink ::> rover.settingsIn;
+        interface settingsToLink : 'IF-07 ScenarioInterface' connect
+            source ::> scenario.settingsOut to sink ::> commLink.settingsIn;
+        interface settingsToDisplay : 'IF-07 ScenarioInterface' connect
+            source ::> scenario.settingsOut to sink ::> display.settingsIn;
     }
 
     // =====================================================================
