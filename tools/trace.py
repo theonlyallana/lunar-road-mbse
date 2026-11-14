@@ -1,8 +1,8 @@
 """Lint the SysML v2 model and build a requirements traceability matrix.
 
 Checks brace balance, that every name used in `require` / `verify` is a
-declared requirement, and that every requirement is verified by at least one
-check. Writes traceability.csv next to the model folder.
+declared requirement, that every requirement has rationale and source metadata,
+and that every requirement is verified by at least one check. Writes traceability.csv next to the model folder.
 
 Usage: python3 tools/trace.py model/
 """
@@ -32,7 +32,13 @@ for f in files:
     for rid, name, body in req_re.findall(src):
         doc = re.search(r"doc\s*/\*(.*?)\*/", body, re.S)
         text = " ".join(doc.group(1).replace("*", " ").split()) if doc else ""
-        requirements[name] = (rid, text, f.name)
+        rat = re.search(r'@Rationale\s*\{\s*text\s*=\s*"([^"]*)"', body)
+        srcm = re.search(r'@SpecSource\s*\{\s*reference\s*=\s*"([^"]*)";\s*basis\s*=\s*"([^"]*)"', body)
+        tbr = "TBR" if "StatusKind::tbr" in body else ""
+        requirements[name] = (rid, text, f.name, rat.group(1) if rat else "",
+                              srcm.group(1) if srcm else "", srcm.group(2) if srcm else "", tbr)
+        if not rat or not srcm:
+            errors.append(f"{f.name}: {rid} is missing rationale or source metadata")
     for check, body in ver_re.findall(src):
         kinds = kind_re.search(body)
         methods = ", ".join(k.strip() for k in kinds.group(1).split(",")) if kinds else ""
@@ -51,12 +57,15 @@ out = model_dir.parent / "traceability.csv"
 uncovered = []
 with out.open("w", newline="") as fh:
     w = csv.writer(fh)
-    w.writerow(["Requirement ID", "Name", "Requirement", "Verified by", "Method"])
-    for name, (rid, text, _) in sorted(requirements.items(), key=lambda kv: kv[1][0]):
+    w.writerow(["Requirement ID", "Name", "Requirement", "Rationale", "Source", "Basis", "Status",
+                "Verified by", "Method"])
+    def natural(rid):
+        return [int(t) if t.isdigit() else t for t in re.split(r"(\d+)", rid)]
+    for name, (rid, text, _, rat, ref, basis, tbr) in sorted(requirements.items(), key=lambda kv: natural(kv[1][0])):
         by = [c for c, (_, n) in checks.items() if name in n]
         if not by:
             uncovered.append(rid)
-        w.writerow([rid, name, text, "; ".join(by), "; ".join(checks[c][0] for c in by)])
+        w.writerow([rid, name, text, rat, ref, basis, tbr, "; ".join(by), "; ".join(checks[c][0] for c in by)])
 
 print(f"{len(files)} files, {len(requirements)} requirements, {len(checks)} verification cases")
 print("Unverified requirements:", ", ".join(uncovered) or "none")

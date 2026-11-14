@@ -28,6 +28,11 @@ package LRD_Structure {
         doc /* Person running the comparison and changing the road assumptions. */
     }
 
+    part def DemoPresentation {
+        doc /* Shared results, the viewer display and anything shown with the tabletop rover.
+             * Subject of the presentation requirements (caveats and framing). */
+    }
+
     // =====================================================================
     // Items carried on the interfaces (IF-01 to IF-07)
     // =====================================================================
@@ -76,7 +81,7 @@ package LRD_Structure {
     }
 
     item def RunRecord {
-        doc /* IF-06: time-stamped route, state, solar power, load, events and results. Parquet or CSV. */
+        doc /* IF-06: route, state, solar power, load, events and results. Parquet or CSV. */
         attribute time : DurationValue;
         attribute x : LengthValue;
         attribute y : LengthValue;
@@ -147,7 +152,7 @@ package LRD_Structure {
         attribute slopeLimit : AngularMeasureValue = 15 ['°'];
         attribute maxHeadingOffset : AngularMeasureValue default 50 ['°'];
         attribute offRoadRollingResistance : Real default 0.2;
-        attribute movingFraction : Real;   // constant for each preset (REQ-P1)
+        attribute movingFraction : Real;   // constant for each preset (ASM-P1)
         attribute currentSlope : AngularMeasureValue;
         attribute slip : Real;            // off-road: 2% at 0, 5% at 5, 10% at 10, 20% at 15 degrees (assumed)
     }
@@ -181,7 +186,7 @@ package LRD_Structure {
         attribute minRoundTrip : DurationValue = 6 [s];
         attribute maxRoundTrip : DurationValue = 10 [s];
         attribute statusPeriod : DurationValue default 60 [s];
-        attribute ackTimeout : DurationValue default 10 [s];
+        attribute ackTimeout : DurationValue default 15 [s];   // REQ-C2.3 (TBR); spec said 10 s
         attribute packetDropRate : Real default 0.0;
         port mapsIn : ~EnvMapsPort;
         port commandIn : ~CommandPort;
@@ -207,7 +212,7 @@ package LRD_Structure {
     }
 
     part def DisplayAndLog {
-        doc /* Browser viewer over the stored run set, plus the run log. */
+        doc /* Display over the stored run set, plus the run log. Product form not yet decided (REQ-MVP10). */
         attribute storedRuns : Integer = 24;
         port plannerRecordIn : ~RunRecordPort;
         port roverRecordIn : ~RunRecordPort;

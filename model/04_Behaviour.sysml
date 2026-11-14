@@ -11,7 +11,7 @@ package LRD_Behaviour {
     // One command cycle of a run: scenario in, run record out.
     // A full run repeats the plan, delay and drive steps every 5 min until the
     // rover arrives or fails; status returns to the planner through the delay (IF-05).
-    // Not modelled as behaviour: command acknowledgement and the 10 s resend (REQ-C2,
+    // Not modelled as behaviour: command acknowledgement and resend (REQ-C2.3, C2.6,
     // verified by CK-6) and the minimum 5 min between commands.
     // =====================================================================
 
@@ -90,7 +90,7 @@ package LRD_Behaviour {
         first start then awaitingCommand;
 
         state awaitingCommand {
-            doc /* No new waypoint starts without a command (REQ-C2). */
+            doc /* No new waypoint starts without a command (REQ-C2.1). */
         }
         accept CommandReceived then driving;
         accept HoldCommanded then holding;
@@ -115,7 +115,7 @@ package LRD_Behaviour {
         accept ScenarioTimeout then failed;
 
         state waitingForEarth {
-            doc /* No driving without Earth in view (REQ-R2). Entered from awaiting a command,
+            doc /* No driving without Earth in view (REQ-R2.2, C2.2). Entered from awaiting a command,
                  * holding or mid-drive; the rover stops until Earth is back in view. */
         }
         accept EarthRegained then awaitingCommand;

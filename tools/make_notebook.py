@@ -26,11 +26,9 @@ views = [
     ("Part tree", "TREE", "LRD_Structure::LunarRoadDemoSystem"),
     ("One simulation run", "ACTION", "LRD_Behaviour::RunScenario"),
     ("Rover operating modes", "STATE", "LRD_Behaviour::RoverModes"),
-    ("Simulation requirements", "TREE", "LRD_Requirements_Sim::simulationSpecification"),
     ("Road preset variants", "TREE", "LRD_Variants::RoadPresetChoices"),
     ("1:10 rover electrical design (E1 to E6)", "INTERCONNECTION", "LRD_Hardware::TabletopRover"),
     ("VIPER block to tabletop mapping", "TREE", "LRD_Hardware::viperReference LRD_Hardware::tabletopRoverDesign"),
-    ("Hardware requirements", "TREE", "LRD_Requirements_Hardware::hardwareSpecification"),
 ]
 cells.append(md("## Diagrams"))
 for title, view, names in views:
