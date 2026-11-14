@@ -98,6 +98,7 @@ package LRD_Behaviour {
         accept GoalReached then arrived;
         accept ChargeBelowReserve then failed;
         accept SlopeLimitExceeded then failed;
+        accept EarthLost then waitingForEarth;
 
         state holding {
             doc /* Planner chose to wait, for example for a moving shadow to pass. */
@@ -106,7 +107,8 @@ package LRD_Behaviour {
         accept ScenarioTimeout then failed;
 
         state waitingForEarth {
-            doc /* No driving without Earth in view (REQ-R2). */
+            doc /* No driving without Earth in view (REQ-R2). Entered from awaiting a command
+                 * or mid-drive; the rover stops until Earth is back in view. */
         }
         accept EarthRegained then awaitingCommand;
         accept ScenarioTimeout then failed;
