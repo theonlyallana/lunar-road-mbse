@@ -4,6 +4,22 @@ A model-based systems engineering (MBSE) model of the Lunar Road Demo: a simulat
 
 The model is written in SysML v2 textual notation. It traces from mission need to requirements, to architecture, to verification. Every value comes from the project specs, which cite public NASA and supplier sources. VIPER details are a public-source reconstruction, not NASA's design.
 
+**Validated:** all eight model files parse and validate with zero errors and zero warnings on the SysML v2 Pilot Implementation 0.63.1 (release 2026-09.1).
+
+## Diagrams
+
+Rendered from the model by the Pilot Implementation.
+
+| Logical architecture (IF-03 to IF-07) | Rover operating modes |
+|---|---|
+| ![Logical architecture](diagrams/systemArchitecture.svg) | ![Rover operating modes](diagrams/roverModes.svg) |
+
+| 1:10 rover electrical design (E1 to E5) | One simulation run |
+|---|---|
+| ![Rover electrical design](diagrams/roverElectrical.svg) | ![Simulation run](diagrams/runFlow.svg) |
+
+More in [`diagrams/`](diagrams): system context, part tree, requirement trees and road preset variants.
+
 ## What's in the model
 
 | File | Contents |
@@ -17,6 +33,7 @@ The model is written in SysML v2 textual notation. It traces from mission need t
 | `07_Requirements_Hardware.sysml` | 10 build requirements (REQ-H1 to H10). |
 | `08_Verification_Traceability.sysml` | 14 verification cases with methods (test, analyse, inspect, demo), satisfy relations, and allocation of run steps to logical elements. |
 | `traceability.csv` | Requirement to verification matrix, generated from the model. |
+| `diagrams/` | Nine diagrams rendered from the model (SVG). |
 | `notebooks/LunarRoadDemo.ipynb` | Loads every file in order and renders the diagrams. |
 
 ## Key modelling decisions
@@ -41,6 +58,8 @@ None of the hardware checks has been run yet, because the rover is not built.
 You can also import the `.sysml` files into [SysON](https://mbse-syson.org) for graphical editing.
 
 To regenerate the traceability matrix after editing: `python3 tools/trace.py model/`
+
+To regenerate the diagrams with Java 21 and a recent Graphviz (2.43 fails on interconnection views): `java -cp jupyter-sysml-kernel-0.63.1-all.jar tools/RenderDiagrams.java <sysml.library> diagrams/`, with `GRAPHVIZ_DOT` pointing at `dot`.
 
 ## Next steps
 
